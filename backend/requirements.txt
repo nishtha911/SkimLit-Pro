@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+tensorflow
+tensorflow-hub
+numpy
+python-multipart
+python-docx
+reportlab
+scikit-learn
