@@ -38,7 +38,8 @@ def predict(abstract_text: str, model) -> list[dict]:
         all_scores = {labels[j]: float(prob[j]) for j in range(len(labels))}
         
         results.append({
-            "sentence": sentences[i],
+            "index": i,
+            "text": sentences[i],
             "label": label,
             "confidence": confidence,
             "all_scores": all_scores

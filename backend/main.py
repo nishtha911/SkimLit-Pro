@@ -54,14 +54,27 @@ async def health():
     return {"status": "ok", "model_loaded": app.state.model is not None}
 
 @app.post("/predict")
-async def predict(request: PredictRequest):
-    # Stub for now
-    return {"sentences": []}
+async def predict_endpoint(request: PredictRequest):
+    if not app.state.model:
+        raise HTTPException(status_code=500, detail="Model is not loaded.")
+    try:
+        from predict import predict
+        results = predict(request.abstract, app.state.model)
+        return {"sentences": results}
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=f"Prediction failed: {str(e)}")
 
 @app.post("/compare")
-async def compare(request: CompareRequest):
-    # Stub for now
-    return {"a": [], "b": []}
+async def compare_endpoint(request: CompareRequest):
+    if not app.state.model:
+        raise HTTPException(status_code=500, detail="Model is not loaded.")
+    try:
+        from predict import predict
+        results_a = predict(request.abstract_a, app.state.model)
+        results_b = predict(request.abstract_b, app.state.model)
+        return {"a": results_a, "b": results_b}
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=f"Prediction failed: {str(e)}")
 
 @app.post("/export")
 async def export(request: ExportRequest):
