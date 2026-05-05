@@ -47,7 +47,7 @@ We use `pytest` for automated backend testing.
    ```
 3. Run the tests:
    ```bash
-   pytest
+   python -m pytest
    ```
 
 #### Manual API Testing
