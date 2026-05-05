@@ -1,122 +1,104 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import React, { useState } from 'react';
+import Highlighter from './components/Highlighter';
+import Heatmap from './components/Heatmap';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [abstract, setAbstract] = useState('');
+  const [results, setResults] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [viewMode, setViewMode] = useState('highlight');
+
+  const handleAnalyse = async () => {
+    if (!abstract.trim()) return;
+    
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('http://localhost:8000/predict', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ abstract }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to analyze abstract');
+      }
+
+      const data = await response.json();
+      setResults(data.sentences);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div style={{ padding: '20px', fontFamily: 'sans-serif', maxWidth: '1200px', margin: '0 auto' }}>
+      <header style={{ borderBottom: '1px solid #ccc', marginBottom: '20px' }}>
+        <h1>SkimLit Pro</h1>
+        <nav>
+          <button onClick={() => {}} style={{ marginRight: '10px' }}>Analyse</button>
+          <button onClick={() => {}}>Compare</button>
+        </nav>
+      </header>
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+      <main style={{ display: 'flex', gap: '20px' }}>
+        {/* Input Panel */}
+        <div style={{ flex: 1 }}>
+          <h3>Input Abstract</h3>
+          <textarea
+            style={{ width: '100%', height: '400px', padding: '10px' }}
+            placeholder="Paste medical abstract here..."
+            value={abstract}
+            onChange={(e) => setAbstract(e.target.value)}
+          ></textarea>
+          <div style={{ marginTop: '10px' }}>
+            <button 
+              onClick={handleAnalyse} 
+              disabled={loading || !abstract.trim()}
+              style={{ padding: '10px 20px', cursor: 'pointer' }}
+            >
+              {loading ? 'Processing...' : 'Analyse'}
+            </button>
+            <button onClick={() => setAbstract('')} style={{ marginLeft: '10px' }}>Clear</button>
+          </div>
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+        {/* Output Panel */}
+        <div style={{ flex: 1, border: '1px solid #eee', padding: '10px', minHeight: '400px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3>Results</h3>
+            {results && (
+              <div>
+                <button onClick={() => setViewMode('highlight')} style={{ fontWeight: viewMode === 'highlight' ? 'bold' : 'normal' }}>Highlighter</button>
+                <button onClick={() => setViewMode('heatmap')} style={{ marginLeft: '5px', fontWeight: viewMode === 'heatmap' ? 'bold' : 'normal' }}>Heatmap</button>
+              </div>
+            )}
+          </div>
+
+          {error && <p style={{ color: 'red' }}>Error: {error}</p>}
+          {loading && <p>Loading analysis...</p>}
+          
+          {!results && !loading && <p>Analysis will appear here.</p>}
+
+          {results && !loading && (
+            <div>
+              {viewMode === 'highlight' ? (
+                <Highlighter sentences={results} />
+              ) : (
+                <Heatmap data={results} />
+              )}
+            </div>
+          )}
+        </div>
+      </main>
+    </div>
+  );
 }
 
-export default App
+export default App;
