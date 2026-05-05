@@ -80,3 +80,7 @@ async def compare_endpoint(request: CompareRequest):
 async def export(request: ExportRequest):
     # Stub for now
     return {"message": "Export feature not yet implemented. Use format pdf or docx."}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -15,12 +15,18 @@ def predict(abstract_text: str, model) -> list[dict]:
     line_numbers_one_hot = tf.one_hot(line_numbers, depth=15)
     total_lines_one_hot = tf.one_hot([total_lines] * total_lines, depth=20) 
     
+    # Create character-level sentences (space separated characters)
+    def split_chars(text):
+        return " ".join(list(text))
+    
+    char_sentences = [split_chars(s) for s in sentences]
+    
     # Create model input dict
     model_inputs = {
         "token_input": tf.constant(sentences),
-        "char_input": tf.constant(sentences),
+        "char_input": tf.constant(char_sentences),
         "line_number_input": line_numbers_one_hot,
-        "total_lines_input": total_lines_one_hot
+        "total_lines_input": tf.one_hot([total_lines - 1] * total_lines, depth=20) 
     }
     
     # Runs model.predict()
