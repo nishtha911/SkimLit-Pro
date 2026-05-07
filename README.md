@@ -1,90 +1,159 @@
-# 📄 SkimLit: Medical Abstract Highlighter
+# 📄 SkimLit Pro — Medical Abstract Classifier
 
-SkimLit is a professional-grade web application designed to help researchers and medical professionals quickly digest complex PubMed abstracts. Using a deep learning model, SkimLit classifies sentences into categories like **BACKGROUND**, **OBJECTIVE**, **METHODS**, **RESULTS**, and **CONCLUSIONS**.
+SkimLit Pro is a full-stack web application that helps researchers and medical professionals quickly digest complex PubMed abstracts. A deep learning model classifies each sentence into one of five rhetorical roles: **BACKGROUND**, **OBJECTIVE**, **METHODS**, **RESULTS**, and **CONCLUSIONS** — with a confidence score per sentence.
+
+---
+
+## ✨ Features
+
+- 🔬 **Sentence-level classification** of medical abstracts using a TensorFlow model trained on the RCT-20k dataset
+- 🎨 **Colour-coded Highlighter** view — each sentence is highlighted by its predicted label
+- 🌡️ **Confidence Heatmap** view — visualise model certainty across all sentences
+- ⚡ **FastAPI backend** with async model loading and CORS support
+- 🖥️ **React + Vite + Tailwind CSS** frontend
+
+---
+
+## 🗂️ Project Structure
+
+```
+skimlit/
+├── backend/                  # FastAPI server & ML inference logic
+│   ├── main.py               # App entry point; /predict, /compare, /export endpoints
+│   ├── predict.py            # Model inference pipeline
+│   ├── preprocess.py         # Text preprocessing utilities
+│   ├── conftest.py           # pytest fixtures
+│   ├── requirements.txt      # Python dependencies
+│   └── tests/
+│       └── test_main.py      # Automated API tests (pytest + httpx)
+│
+├── frontend/                 # React application (Vite)
+│   ├── src/
+│   │   ├── App.jsx           # Root component; handles state & API calls
+│   │   └── components/
+│   │       ├── Highlighter.jsx   # Colour-coded sentence view
+│   │       └── Heatmap.jsx       # Confidence heatmap view
+│   ├── index.html
+│   ├── package.json
+│   ├── tailwind.config.js
+│   └── vite.config.js
+│
+├── model/                    # Saved TensorFlow model (not tracked in git)
+│   └── skimlit_model/        # Place your SavedModel directory here
+│
+├── pubmed-rct/               # Dataset used for model training
+├── SkimLit.ipynb             # Model training & evaluation notebook
+├── helper_functions.py       # Shared utility functions
+└── implementation_plan.md    # Development roadmap
+```
 
 ---
 
 ## 🚀 Getting Started
 
+### Prerequisites
+- Python 3.9+
+- Node.js 18+
+- A trained model saved at `model/skimlit_model/` (TensorFlow SavedModel format)
+
+---
+
 ### 1. Backend Setup (FastAPI)
-The backend serves the ML model and provides API endpoints for prediction.
 
 ```bash
 cd backend
+
+# Create and activate a virtual environment
 python -m venv venv
+
 # Windows
 .\venv\Scripts\activate
-# Unix/macOS
+# Unix / macOS
 source venv/bin/activate
 
+# Install dependencies
 pip install -r requirements.txt
+
+# Start the server
 python main.py
 ```
-The backend will be available at `http://localhost:8000`.
+
+> The backend will be available at **`http://localhost:8000`**
+
+> **Note:** If no model is found at `model/skimlit_model/`, the server still starts but returns `500` on prediction endpoints.
+
+---
 
 ### 2. Frontend Setup (React + Vite)
-The frontend provides a modern, interactive interface for abstract analysis.
 
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-The frontend will be available at `http://localhost:5173`.
+
+> The frontend will be available at **`http://localhost:5173`**
 
 ---
 
-## 🧪 How to Test
+## 🧪 Testing
 
-### Backend Testing
+### Automated Backend Tests (pytest)
 
-#### Automated Tests
-We use `pytest` for automated backend testing.
-1. Ensure you are in the `backend` directory and your virtual environment is active.
-2. Install test dependencies:
-   ```bash
-   pip install pytest httpx
-   ```
-3. Run the tests:
-   ```bash
-   python -m pytest
-   ```
+```bash
+# From the backend/ directory with the venv active
+python -m pytest
+```
 
-#### Manual API Testing
-You can test the endpoints using `curl` or tools like Postman/Insomnia.
+Tests use `pytest` + `httpx` and are located in `backend/tests/test_main.py`.
 
-**Health Check:**
+---
+
+### Manual API Testing
+
+**Health check:**
 ```bash
 curl http://localhost:8000/health
 ```
+Response:
+```json
+{ "status": "ok", "model_loaded": true }
+```
 
-**Prediction Endpoint:**
+**Classify a single abstract:**
 ```bash
 curl -X POST http://localhost:8000/predict \
      -H "Content-Type: application/json" \
-     -d '{"abstract": "This study aims to evaluate the effectiveness of SkimLit. We used a deep learning model. Results showed high accuracy."}'
+     -d '{"abstract": "This study evaluated the effectiveness of a new drug. We enrolled 200 patients. Results showed a significant improvement. We conclude the drug is effective."}'
 ```
 
-### Frontend Testing
-1. **Linting:** Run `npm run lint` to check for code style issues.
-2. **Visual Testing:** Open the app in your browser and verify:
-   - Text input works correctly.
-   - Highlights appear with correct colors.
-   - Confidence heatmap is interactive.
-   - Comparison view shows side-by-side results.
+**Compare two abstracts:**
+```bash
+curl -X POST http://localhost:8000/compare \
+     -H "Content-Type: application/json" \
+     -d '{"abstract_a": "First abstract...", "abstract_b": "Second abstract..."}'
+```
 
 ---
 
 ## 🔌 API Reference
 
-### `POST /predict`
-Classifies sentences in a single medical abstract.
+### `GET /health`
+Returns server and model status.
 
-**Request Body:**
+**Response:**
 ```json
-{
-  "abstract": "Text of the abstract here..."
-}
+{ "status": "ok", "model_loaded": true }
+```
+
+---
+
+### `POST /predict`
+Classifies all sentences in a medical abstract.
+
+**Request body:**
+```json
+{ "abstract": "Full text of the abstract..." }
 ```
 
 **Response:**
@@ -93,20 +162,21 @@ Classifies sentences in a single medical abstract.
   "sentences": [
     {
       "line_number": 0,
+      "total_lines": 4,
+      "text": "This study evaluated the effectiveness of a new drug.",
       "target": "OBJECTIVE",
-      "text": "To investigate the efficacy of...",
-      "total_lines": 5,
-      "confidence": 0.98
-    },
-    ...
+      "confidence": 0.97
+    }
   ]
 }
 ```
 
-### `POST /compare`
-Compares two abstracts side-by-side.
+---
 
-**Request Body:**
+### `POST /compare`
+Runs `/predict` on two abstracts and returns both result sets.
+
+**Request body:**
 ```json
 {
   "abstract_a": "First abstract...",
@@ -114,17 +184,48 @@ Compares two abstracts side-by-side.
 }
 ```
 
+**Response:**
+```json
+{
+  "a": [ /* sentences array */ ],
+  "b": [ /* sentences array */ ]
+}
+```
+
+---
+
+### `POST /export` *(stub)*
+Planned endpoint for exporting results to PDF or DOCX. Not yet implemented.
+
 ---
 
 ## 🛠️ Tech Stack
-- **Frontend:** React, Vite, Tailwind CSS, Lucide React, Framer Motion.
-- **Backend:** FastAPI, TensorFlow, Scikit-learn.
-- **ML Model:** Custom-trained multi-modal model (RCT-20k).
+
+| Layer | Technology |
+|---|---|
+| Frontend | React 19, Vite 8, Tailwind CSS 4 |
+| Backend | FastAPI, Uvicorn |
+| ML / Inference | TensorFlow, TensorFlow Hub, scikit-learn |
+| Testing | pytest, httpx |
+| Data | PubMed RCT-20k dataset |
 
 ---
 
-## 📂 Project Structure
-- `/backend`: FastAPI server and ML logic.
-- `/frontend`: React application.
-- `/pubmed-rct`: Dataset used for model training.
-- `SkimLit.ipynb`: Model training notebook.
+## 📓 Model Training
+
+The model is trained and evaluated in **`SkimLit.ipynb`** (and the earlier `skimlit notebook.ipynb`). After training, export the model using:
+
+```python
+model.save("../model/skimlit_model")
+```
+
+Then restart the backend server to pick it up automatically.
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/your-feature`
+3. Commit your changes: `git commit -m 'Add your feature'`
+4. Push and open a Pull Request
